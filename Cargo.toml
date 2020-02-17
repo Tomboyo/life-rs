@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 rand = "=0.7.3"
+num-traits = "=0.2.11"
 
 [dependencies.sdl2]
 version = "=0.33"
