@@ -36,9 +36,13 @@ impl<T> Vec2D<T> {
     }
 
     pub fn get(&self, x: i64, y: i64) -> Option<&T> {
-        let index = (self.width as i64 * y) + x;
-        let index = index.to_usize()?;
-        self.data.get(index)
+        if (0..self.width as i64).contains(&x)
+        && (0..self.height as i64).contains(&y) {
+            let index = (self.width as i64 * y) + x;
+            self.data.get(index.to_usize()?)
+        } else {
+            None
+        }
     }
 
     pub fn iter(&self) -> Iter<'_, T> {
@@ -121,6 +125,26 @@ mod tests {
         assert_eq!(vec![
             (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)
         ], actual.data);
+    }
+
+    #[test]
+    fn test_get() {
+        let vec = Vec2D::new(2, 2, &mut |x, y| (x, y));
+        assert_eq!(&(1, 1), vec.get(1, 1).unwrap());
+    }
+
+    #[test]
+    fn test_get_x_bounds() {
+        let vec = Vec2D::new(2, 2, &mut |x, y| (x, y));
+        assert_eq!(None, vec.get(-1, 0), "(-1, 0) is outside bounds");
+        assert_eq!(None, vec.get(2, 0), "(2, 0) is outside bounds");
+    }
+
+    #[test]
+    fn test_get_y_bounds() {
+        let vec = Vec2D::new(2, 2, &mut |x, y| (x, y));
+        assert_eq!(None, vec.get(0, -1), "(0, -1) is outside bounds");
+        assert_eq!(None, vec.get(0, 2), "(0, 2) is outside bounds");
     }
 
     #[test]

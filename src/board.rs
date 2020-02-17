@@ -8,11 +8,12 @@ use sdl2::video::Window;
 
 use crate::vec2d::Vec2D;
 
+#[derive(Debug)]
 pub struct Board {
     data: Vec2D<Cell>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum Cell {
     Alive(),
     Dead(),
@@ -21,14 +22,19 @@ enum Cell {
 impl Board {
     pub fn new_random(width: u32, height: u32) -> Self {
         let mut rand = rand::thread_rng();
+        Board::new(width, height, &mut |_x, _y|
+            if rand.gen() {
+                Cell::Alive()
+            } else {
+                Cell::Dead()
+            }
+        )
+    }
+
+    fn new<F>(width: u32, height: u32, initializer: &mut F) -> Self
+    where F: FnMut(u32, u32) -> Cell {
         Board {
-            data: Vec2D::new(width, height, &mut |_x, _y|
-                if rand.gen() {
-                    Cell::Alive()
-                } else {
-                    Cell::Dead()
-                }
-            )
+            data: Vec2D::new(width, height, initializer)
         }
     }
 
@@ -87,5 +93,31 @@ impl Board {
                 let rect = Rect::new(x, y, width, height);
                 canvas.fill_rect(rect).unwrap();
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_living_neighbors() {
+        let board = Board::new(3, 3, &mut |_, _| Cell::Alive());
+        let actual = board.living_neighbors(1, 1);
+        assert_eq!(8, actual);
+    }
+
+    #[test]
+    fn test_living_neighbors_upper_right() {
+        let board = Board::new(3, 3, &mut |_, _| Cell::Alive());
+        let actual = board.living_neighbors(2, 0);
+        assert_eq!(3, actual);
+    }
+
+    #[test]
+    fn test_living_neighbors_lower_left() {
+        let board = Board::new(3, 3, &mut |_, _| Cell::Alive());
+        let actual = board.living_neighbors(0, 2);
+        assert_eq!(3, actual);
     }
 }
