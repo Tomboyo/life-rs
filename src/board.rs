@@ -42,7 +42,7 @@ impl Board {
         self.data = Vec2D::from_vec(
             self.data.width,
             self.data.height,
-            self.data.iter().enumerate()
+            self.data.iter()
                 .map(|((x, y), cell)| self.advance_cell(x, y, cell))
                 .collect()
         ).unwrap();
@@ -79,7 +79,7 @@ impl Board {
         let alive_color = Color::RGB(0, 0, 0);
         let dead_color = Color::RGB(255, 255, 255);
 
-        self.data.iter().enumerate()
+        self.data.iter()
             .map(|((x, y), cell)| {
                 let x = (x * width).to_i32().unwrap();
                 let y = (y * height).to_i32().unwrap();

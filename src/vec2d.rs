@@ -7,16 +7,6 @@ pub struct Vec2D<T> {
     data: Vec<T>,
 }
 
-pub struct Iter<'a, T> {
-    width: u32,
-    iter: std::slice::Iter<'a, T>,
-}
-
-pub struct Enumerator<'a, T> {
-    width: u32,
-    iter: std::iter::Enumerate<std::slice::Iter<'a, T>>,
-}
-
 impl<T> Vec2D<T> {
     pub fn new<F>(width: u32, height: u32, initializer: &mut F) -> Self
     where F: FnMut(u32, u32) -> T
@@ -56,39 +46,13 @@ impl<T> Vec2D<T> {
         }
     }
 
-    pub fn iter(&self) -> Iter<'_, T> {
-        Iter {
-            width: self.width,
-            iter: self.data.iter(),
-        }
-    }
-}
-
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-}
-
-impl<'a, T> Iter<'a, T> {
-    pub fn enumerate(self) -> Enumerator<'a, T> {
-        Enumerator {
-            width: self.width,
-            iter: self.iter.enumerate(),
-        }
-    }
-}
-
-impl<'a, T> Iterator for Enumerator<'a, T> {
-    type Item = ((u32, u32), &'a T);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (index, element) = self.iter.next()?;
-        let y = index as u32 / self.width;
-        let x = index as u32 % self.width;
-        Some(((x, y), element))
+    pub fn iter(&self) -> impl Iterator<Item = ((u32, u32), &T)> {
+        self.data.iter().enumerate()
+            .map(move |(index, t)| {
+                let y = index.to_u32().unwrap() / self.width;
+                let x = index.to_u32().unwrap() % self.width;
+                ((x, y), t)
+            })
     }
 }
 
@@ -141,26 +105,15 @@ mod tests {
 
     #[test]
     fn test_iter() {
-        let vector = Vec2D::new(2, 2, &mut |x, y| (x, y));
-        let actual: Vec<(u32, u32)> = vector.iter().map(|x| *x).collect();
-        let expected = vec![(0, 0), (1, 0), (0, 1), (1, 1)];
-
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn test_iter_enumerate() {
-        let vector = Vec2D::new(2, 2, &mut |x, y| (x, y));
-        let actual: Vec<((u32, u32), (u32, u32))> = vector.iter().enumerate()
-            .map(|(index, value)| (index, *value))
-            .collect();
-        let expected = vec![
-            ((0, 0), (0, 0)),
-            ((1, 0), (1, 0)),
-            ((0, 1), (0, 1)),
-            ((1, 1), (1, 1))
-        ];
-
-        assert_eq!(expected, actual);
+        let vec2d = Vec2D::new(2, 3, &mut |x, y| (x, y));
+        let actual: Vec<((u32, u32), &(u32, u32))> = vec2d.iter().collect();
+        assert_eq!(vec![
+            ((0, 0), &(0, 0)),
+            ((1, 0), &(1, 0)),
+            ((0, 1), &(0, 1)),
+            ((1, 1), &(1, 1)),
+            ((0, 2), &(0, 2)),
+            ((1, 2), &(1, 2)),
+        ], actual);
     }
 }
