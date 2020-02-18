@@ -39,22 +39,23 @@ impl Board {
     }
 
     pub fn advance(&mut self) {
-        let mut next_data: Vec2D<Cell> = self.data.iter().enumerate()
-            .map(|((x, y), cell)| {
-                let n = self.living_neighbors(x, y);
-                match cell {
-                    Cell::Alive() if n == 2 || n == 3 => Cell::Alive(),
-                    Cell::Alive() => Cell::Dead(),
-                    Cell::Dead() if n == 3 => Cell::Alive(),
-                    Cell::Dead() => Cell::Dead(),
-                }
-            })
-            .collect();
-        
-        // collect() doesn't know the dimensions of the new Vec2D
-        next_data.repartition(self.data.width, self.data.height).unwrap();
-        
-        self.data = next_data;
+        self.data = Vec2D::from_vec(
+            self.data.width,
+            self.data.height,
+            self.data.iter().enumerate()
+                .map(|((x, y), cell)| self.advance_cell(x, y, cell))
+                .collect()
+        ).unwrap();
+    }
+
+    fn advance_cell(&self, x: u32, y: u32, cell: &Cell) -> Cell {
+        let n = self.living_neighbors(x, y);
+        match cell {
+            Cell::Alive() if n == 2 || n == 3 => Cell::Alive(),
+            Cell::Alive() => Cell::Dead(),
+            Cell::Dead() if n == 3 => Cell::Alive(),
+            Cell::Dead() => Cell::Dead(),
+        }
     }
 
     fn living_neighbors(&self, x: u32, y: u32) -> u32 {

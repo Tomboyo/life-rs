@@ -1,5 +1,3 @@
-use std::iter::FromIterator;
-
 use num_traits::ToPrimitive;
 
 #[derive(Debug)]
@@ -35,6 +33,19 @@ impl<T> Vec2D<T> {
         Self { width, height, data }
     }
 
+    pub fn from_vec(
+        width: u32,
+        height: u32,
+        data: Vec<T>
+    ) -> Result<Self, String> {
+        if width as usize * height as usize == data.len() {
+            Ok(Self { width, height, data })
+        } else {
+            Err("Invalid dimensions: Width * height must equal data.len"
+                .to_string())
+        }
+    }
+
     pub fn get(&self, x: i64, y: i64) -> Option<&T> {
         if (0..self.width as i64).contains(&x)
         && (0..self.height as i64).contains(&y) {
@@ -50,37 +61,6 @@ impl<T> Vec2D<T> {
             width: self.width,
             iter: self.data.iter(),
         }
-    }
-
-    // Used to change the width and height of an existing Vec2D. The intended
-    // use-case is to assign the dimensions of a Vec2D after creating one via
-    // iter.collect(), which by default creates a Vec2D with only one dimension.
-    pub fn repartition(
-        &mut self,
-        width: u32,
-        height: u32
-    ) -> Result<(), String> {
-        if width * height == self.data.len() as u32 {
-            self.width = width;
-            self.height = height;
-            Ok(())
-        } else {
-            Err(format!(
-                "Cannot repartition: new capacity {} differs from current
-                capacity {}", width * height, self.data.len()))
-        }
-    }
-}
-
-impl<T> FromIterator<T> for Vec2D<T> {
-    fn from_iter<I>(iter: I) -> Self
-    where I: IntoIterator<Item=T>
-    {
-        let mut data = Vec::new();
-        for element in iter {
-            data.push(element);
-        }
-        Vec2D { width: data.len() as u32, height: 1, data: data }
     }
 }
 
@@ -119,12 +99,24 @@ mod tests {
     #[test]
     fn test_new() {
         let actual = Vec2D::new(3, 2, &mut |x, y| (x, y));
-
         assert_eq!(3u32, actual.width);
         assert_eq!(2u32, actual.height);
         assert_eq!(vec![
             (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)
         ], actual.data);
+    }
+
+    #[test]
+    fn test_from_vec() {
+        let actual = Vec2D::from_vec(2, 3, vec![0, 1, 2, 3, 4, 5]).unwrap();
+        assert_eq!(2u32, actual.width);
+        assert_eq!(3u32, actual.height);
+        assert_eq!(vec![0, 1, 2, 3, 4, 5], actual.data);
+    }
+
+    #[test]
+    fn test_from_vec_incompatible_dimensions() {
+        assert!(Vec2D::from_vec(3, 3, vec![1]).is_err());
     }
 
     #[test]
@@ -145,20 +137,6 @@ mod tests {
         let vec = Vec2D::new(2, 2, &mut |x, y| (x, y));
         assert_eq!(None, vec.get(0, -1), "(0, -1) is outside bounds");
         assert_eq!(None, vec.get(0, 2), "(0, 2) is outside bounds");
-    }
-
-    #[test]
-    fn test_repartition() {
-        let mut actual = Vec2D::new(3, 2, &mut |x, y| (x, y));
-        println!("{:?}", actual);
-        actual.repartition(2, 3).unwrap(); // reverse dimensions
-        println!("{:?}", actual);
-
-        assert_eq!(2u32, actual.width);
-        assert_eq!(3u32, actual.height);
-        assert_eq!(vec![
-            (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)
-        ], actual.data);
     }
 
     #[test]
